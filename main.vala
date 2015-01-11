@@ -4,6 +4,7 @@ using GLib;
 public class Main : Window {
 	Gtk.Button button1; //Download
 	Gtk.Button button2; //Settings
+	Gtk.ComboBoxText cbox1;
 	Gtk.Entry entry1;
 	Gtk.TextView textview1;
 	Gtk.ProgressBar pbar1;
@@ -31,11 +32,20 @@ public class Main : Window {
 			on_button2_clicked();
 		});
 
+		cbox1 = new Gtk.ComboBoxText();
+		cbox1.append_text("Video");
+		cbox1.append_text("Mp3");
+		cbox1.active = 0;
+		cbox1.changed.connect(() => {
+			//cbox1_changed();
+		});
+
 		entry1 = new Gtk.Entry();
 		entry1.set_placeholder_text("Paste your url..");
 
 		textview1 = new Gtk.TextView();
 		textview1.set_editable(false);
+		textview1.set_overwrite(false);
 
 		pbar1 = new Gtk.ProgressBar();
 
@@ -49,6 +59,7 @@ public class Main : Window {
 		hbar.pack_end(button2);
 
 		var hbox = new Box(Orientation.HORIZONTAL, 10);
+		hbox.pack_start(cbox1, false);
 		hbox.pack_start(entry1);
 
 		var vbox = new Box(Orientation.VERTICAL, 10);
@@ -74,17 +85,40 @@ public class Main : Window {
 
 
 	//Action-Methods
-	public void on_button1_clicked() {
-		string command = "youtube-dl";
-		string url = entry1.get_text();
-
-		execute_command_async_with_pipes.begin (new string[]{command, url, "--newline"}, (obj, async_res) => {
+	public void on_button1_clicked () {
+		execute_command_async_with_pipes.begin (get_command(), (obj, async_res) => {
 			GLib.message("Done");
 		});
 	}
 
-	public void on_button2_clicked() {
+	public void on_button2_clicked () {
 
+	}
+
+
+	/**
+		Finds the corresponding command options and returns it as string[].
+	*/
+	public string[] get_command () {
+		var array = new GenericArray<string> ();
+		array.add ("youtube-dl");
+		array.add (entry1.get_text());
+		array.add ("--newline");
+		array.add ("--ignore-errors");
+
+		string str_option = cbox1.get_active_text ();
+		if (str_option == "Video") {
+
+		}
+		else if (str_option == "Mp3") {
+			array.add ("--extract-audio");
+			array.add ("--audio-format");
+			array.add ("mp3");
+		}
+
+		//Convert GenericArray to builtin array and return
+		string[] builtin_array = array.data;
+		return builtin_array;
 	}
 
 	/**
@@ -110,8 +144,13 @@ public class Main : Window {
 			str_progress = str_progress.replace(".","");
 			str_progress = "0." + str_progress;
 
-			//Set pbar1 to current progress
-			pbar1.set_fraction(double.parse(str_progress));
+			//Convert to double and set pbar1 to current progress
+			double d_progress = double.parse(str_progress);
+			pbar1.set_fraction(d_progress);
+
+			if (d_progress == 1) {
+				textview1.buffer.text = "Done";
+			}
 		}
 	}
 
@@ -135,3 +174,4 @@ public class Main : Window {
 	}
 
 }
+
