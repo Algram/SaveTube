@@ -3,10 +3,10 @@ using GLib;
 
 public class Main : Window {
 	Gtk.Button button1; //Download
-	Gtk.Button button2; //Settings
+	Gtk.Button button2; //Settings WIP
 	Gtk.ComboBoxText cbox1;
 	Gtk.Entry entry1;
-	Gtk.TextView textview1;
+	Gtk.ListBox listbox1;
 	Gtk.ProgressBar pbar1;
 
 	public Main() {
@@ -16,7 +16,6 @@ public class Main : Window {
 		this.border_width = 10;
 		this.window_position = WindowPosition.CENTER;
 		this.destroy.connect(Gtk.main_quit);
-		this.set_default_size(400,200);
 		this.set_resizable(false);
 
 		//Generating Ui-Elements
@@ -43,9 +42,9 @@ public class Main : Window {
 		entry1 = new Gtk.Entry();
 		entry1.set_placeholder_text("Paste your url..");
 
-		textview1 = new Gtk.TextView();
-		textview1.set_editable(false);
-		textview1.set_overwrite(false);
+		//Setting up TextView with TextBuffer
+		listbox1 = new Gtk.ListBox();
+		listbox1.set_size_request(500, 100);
 
 		pbar1 = new Gtk.ProgressBar();
 
@@ -64,7 +63,7 @@ public class Main : Window {
 
 		var vbox = new Box(Orientation.VERTICAL, 10);
 		vbox.pack_start(hbox);
-		vbox.pack_start(textview1);
+		vbox.pack_start(listbox1);
 		vbox.pack_start(pbar1);
 
 		this.add(vbox);
@@ -125,14 +124,21 @@ public class Main : Window {
 		Processes the command string from youtube-dl and reacts accordingly.
 	*/
 	public void processCommandString(string str_command) {
-		if(str_command.contains("Destination:")) {
+		if(str_command.contains("[download] Destination")) {
 			//Get the title
 			int pos_title = str_command.index_of(":");
 			string str_title = str_command.substring(pos_title+2, str_command.last_index_of("-")-pos_title-2);
 
 			//Set textview1 to title;
 			entry1.set_text("");
-			textview1.buffer.text = str_title;
+
+			if (str_title.length > 65) {
+				str_title = str_title.slice(0, 65) + "...";
+			}
+
+			var label = new Gtk.Label(str_title);
+			label.set_halign(Align.START);
+			listbox1.add(label);
 		}
 		else if(str_command.contains("%")) {
 			//Get the progress number
@@ -141,17 +147,23 @@ public class Main : Window {
 
 			//Prepare the string for conversion
 			str_progress = str_progress.strip();
-			str_progress = str_progress.replace(".","");
-			str_progress = "0." + str_progress;
 
 			//Convert to double and set pbar1 to current progress
-			double d_progress = double.parse(str_progress);
+			double d_progress = double.parse(str_progress)/100;
 			pbar1.set_fraction(d_progress);
 
 			if (d_progress == 1) {
-				textview1.buffer.text = "Done";
+				//TODO DONE, just a placeholder atm
+				var label = new Gtk.Label("DONE!");
+				label.set_halign(Align.START);
+				listbox1.add(label);
 			}
 		}
+		else if (str_command.contains("ERROR")) {
+			//Doesn't work yet, can't catch ytdl errors
+		}
+
+		listbox1.show_all();
 	}
 
 	//Spawn corresponding Pipes and return the output-line back as string
@@ -174,4 +186,3 @@ public class Main : Window {
 	}
 
 }
-
